@@ -93,7 +93,7 @@ library(arulesViz)
 #####subset data for NYC 
 ```{r}
 load("inat.ok.sm.Rdata")
-inat.nyc = subset(inat.ok,X.park >=-74.2589 & X.park< -73.7004 & Y.park <=40.9176 & Y.park>=40.4774)
+inat.nyc = subset(inat.ok.sm,X.park >=-74.2589 & X.park< -73.7004 & Y.park <=40.9176 & Y.park>=40.4774)
 write.csv(inat.nyc, file = "inat.nyc.csv")
 ```
 
@@ -112,6 +112,9 @@ inat.ct$count = 1#make all counts 1
  inat.ct$park_date_recordedBy = factor(paste(inat.ct$park, inat.ct$date, inat.ct$recordedBy, sep = "_"))
   inat.ct$park_date = factor(paste(inat.ct$park, inat.ct$date, sep = "_"))
  i.df = inat.ct[, c("park_date_recordedBy", "park_date", "species", "count")]
+ 
+ RaNo = subset(i.df, species == "Rattus norvegicus")
+ dim(RaNo)#only seen 5 times
 #write and then read back in again as transaction
   write.csv(i.df, file = "i.df.csv")
  
@@ -121,15 +124,18 @@ itrans = read.transactions("i.df.csv", format = "single", sep = ",", cols = c("p
 irulesRaNo <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.2, maxlen=3), appearance = list(rhs="Rattus norvegicus"))# 
 subrulesRaNo <- head(irulesRaNo, n = 5, by = "lift")
 plot(subrulesRaNo, method = "graph", main = "Norway rat, NYC, N=5 rules")
+inspect(subrulesRaNo)
 
 #find all rules for black-capped chickadees:
-irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.2, maxlen=3), appearance = list(rhs="Poecile atricapillus"))# 
+irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.2, maxlen=3), appearance = list(rhs="Poecile atricapillus"))#
 subrulesBlCa <- head(irulesBlCa, n = 5, by = "lift")
 plot(subrulesBlCa, method = "graph", main = "Black-capped Chickadee, NYC, N=5 rules")
+inspect(subrulesBlCa)
     ```
 
 #####find association rules across all iNaturalist data
 ```{r}
+
 load("inat.ok.sm.Rdata")
 inat.df = inat.ok.sm
 inat.df = data.frame(inat.df)
@@ -144,21 +150,26 @@ inat.ct$count = 1#make all counts 1
  i.df = inat.ct[, c("park_date_recordedBy", "park_date", "species", "count")]
 #write and then read back in again as transaction
   write.csv(i.df, file = "i.df.csv")
- 
+
 itrans = read.transactions("i.df.csv", format = "single", sep = ",", cols = c("park_date_recordedBy", "species"))
 
+#find all rat observations
+rat=subset(i.df, species == "Rattus norvegicus")
 #find all rules involving Norway rats
-  irulesRaNo <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.05, maxlen=3), appearance = list(rhs="Rattus norvegicus"))# 
+  irulesRaNo <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.05, maxlen=3), appearance = list(rhs="Rattus norvegicus"))#
 subrulesRaNo <- head(irulesRaNo, n = 5, by = "lift")
 plot(subrulesRaNo, method = "graph", main = "rats, all data, maxlen=3")
-
+print("Norway rat rules")
+inspect(subrulesRaNo)
 #find all rules for black-capped chickadees:
-irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.1, maxlen=3), appearance = list(rhs="Poecile atricapillus"))# 
+irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.1, maxlen=3), appearance = list(rhs="Poecile atricapillus"))#
 subrulesBlCa <- head(irulesBlCa, n = 5, by = "lift")
 plot(subrulesBlCa, method = "graph", main = "black-capped chickadees, all data, maxlen=3")
+print("Black-capped Chickadee rules")
+inspect(subrulesBlCa)
 
 #find all rules, include maxlen of 3
-irules <- apriori(itrans, parameter = list(support = 0.001, confidence = 0.1, maxlen=3))# 
+irules <- apriori(itrans, parameter = list(support = 0.001, confidence = 0.1, maxlen=3))#
 subrules <- head(irules, n = 10, by = "lift")
 plot(subrules, method = "graph", main = "all data, maxlen=3")
 
@@ -166,6 +177,7 @@ plot(subrules, method = "graph", main = "all data, maxlen=3")
 
 #####read in basic (not reference) ebird data
 ```{r}
+
 rm(list = ls())
 input_file = "/Users/fischhoff/app_wild/bird_basic_NY_NY/ebd_US-NY-061_relFeb-2018.txt"
 
@@ -173,21 +185,25 @@ output_file = "/Users/fischhoff/app_wild/bird_basic_NY_NY/ebd_US-NY-061_relFeb-2
 auk_clean(input_file, output_file, overwrite=TRUE)
 
 ebd_NYNY = read_ebd(output_file)
+
 ```
 
 
 #####find association rules in eBird NYC data 
 ```{r}
+
 write.csv(ebd_NYNY, file = "ebd_NYNY.csv")
 etrans = read.transactions("ebd_NYNY.csv", format = "single", sep = ",", cols = c("checklist_id", "common_name"))
 
-erulesBlCa <- apriori(etrans, parameter = list(support = 0.001, confidence = 0.6, maxlen=3), appearance = list(rhs="Black-capped Chickadee"))#could re-run with 
+erulesBlCa <- apriori(etrans, parameter = list(support = 0.001, confidence = 0.6, maxlen=3), appearance = list(rhs="Black-capped Chickadee"))#could re-run with
 subrulesBlCa <- head(erulesBlCa, n = 5, by = "lift")
 plot(subrulesBlCa, method = "graph", main = "black-capped chickadee, eBird NYC, N=10 rules, maxlen=3")
+inspect(subrulesBlCa)
 
-erules <- apriori(etrans, parameter = list(support = 0.01, confidence = 0.6, maxlen=3))#could re-run with 
+erules <- apriori(etrans, parameter = list(support = 0.01, confidence = 0.6, maxlen=3))#could re-run with
 subrules <- head(erules, n = 10, by = "lift")
 plot(subrules, method = "graph", main = "all species, eBird NYC, N=10 rules, maxlen=3")
-#plot = plot(subrules, method = "grouped")
+plot = plot(subrules, method = "grouped")
+inspect(subrules)
 
 ```

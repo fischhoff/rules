@@ -3,8 +3,7 @@ rules
 Ilya
 5/13/2018
 
-install packages
-================
+##### install packages
 
 ``` r
 #install package dplyr if not already installed
@@ -119,8 +118,7 @@ library(arulesViz)
 
     ## Loading required package: grid
 
-read in shapefile of protected areas and reproject and save as PAD\_wgs84.Rdata -- commenting out this part
-===========================================================================================================
+##### read in shapefile of protected areas and reproject and save as PAD\_wgs84.Rdata -- commenting out this part
 
 ``` r
 #   library("rgdal")
@@ -142,7 +140,7 @@ read in shapefile of protected areas and reproject and save as PAD\_wgs84.Rdata 
 # save(PAD_wgs84, file = "PAD_wgs84.Rdata")
 ```
 
-#### read in iNaturalist data and assign it to parks -- commenting out this part
+##### read in iNaturalist data and assign it to parks -- commenting out this part
 
 ``` r
 # rm(list = ls())
@@ -178,31 +176,29 @@ read in shapefile of protected areas and reproject and save as PAD\_wgs84.Rdata 
 # save(inat.ok, file = "inat.ok.Rdata")
 ```
 
-make small version of data
-==========================
+##### make small version of data -- comment out this part
 
 ``` r
-load("inat.ok.Rdata")
-inat.ok$date =  as.Date(paste(inat.ok$year, inat.ok$month, inat.ok$day, sep='-'))
+# load("inat.ok.Rdata")
+# inat.ok$date =  as.Date(paste(inat.ok$year, inat.ok$month, inat.ok$day, sep='-'))
+# inat.ok.sm = inat.ok[, c("park", "recordedBy", "species", "date", "X.park", "Y.park")]
+# save(inat.ok.sm, file = "inat.ok.sm.Rdata")
+```
+
+##### subset data for NYC
+
+``` r
+load("inat.ok.sm.Rdata")
+inat.nyc = subset(inat.ok.sm,X.park >=-74.2589 & X.park< -73.7004 & Y.park <=40.9176 & Y.park>=40.4774)
 ```
 
     ## Loading required package: sp
 
 ``` r
-inat.ok.sm = inat.ok[, c("park", "recordedBy", "species", "date", "X.park", "Y.park")]
-save(inat.ok.sm, file = "inat.ok.sm.Rdata")
-```
-
-#### subset data for NYC
-
-``` r
-load("inat.ok.sm.Rdata")
-inat.nyc = subset(inat.ok,X.park >=-74.2589 & X.park< -73.7004 & Y.park <=40.9176 & Y.park>=40.4774)
 write.csv(inat.nyc, file = "inat.nyc.csv")
 ```
 
-find association rules for rats in NYC; plot strongly supported associations
-============================================================================
+##### find association rules for rats in NYC; plot strongly supported associations
 
 ``` r
 inat.nyc = read.csv("inat.nyc.csv")
@@ -218,6 +214,14 @@ inat.ct$count = 1#make all counts 1
  inat.ct$park_date_recordedBy = factor(paste(inat.ct$park, inat.ct$date, inat.ct$recordedBy, sep = "_"))
   inat.ct$park_date = factor(paste(inat.ct$park, inat.ct$date, sep = "_"))
  i.df = inat.ct[, c("park_date_recordedBy", "park_date", "species", "count")]
+ 
+ RaNo = subset(i.df, species == "Rattus norvegicus")
+ dim(RaNo)#only seen 5 times
+```
+
+    ## [1] 5 4
+
+``` r
 #write and then read back in again as transaction
   write.csv(i.df, file = "i.df.csv")
  
@@ -251,8 +255,8 @@ irulesRaNo <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.
     ## 0.2, : Mining stopped (maxlen reached). Only patterns up to a length of 3
     ## returned!
 
-    ##  done [0.06s].
-    ## writing ... [163 rule(s)] done [0.04s].
+    ##  done [0.05s].
+    ## writing ... [163 rule(s)] done [0.05s].
     ## creating S4 object  ... done [0.01s].
 
 ``` r
@@ -263,8 +267,23 @@ plot(subrulesRaNo, method = "graph", main = "Norway rat, NYC, N=5 rules")
 ![](rules_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
 ``` r
+inspect(subrulesRaNo)
+```
+
+    ##     lhs                       rhs                      support confidence  lift count
+    ## [1] {Blaniulus guttulatus} => {Rattus norvegicus} 0.0005002501          1 399.8     1
+    ## [2] {Blaniulus guttulatus,                                                           
+    ##      Zonitoides nitidus}   => {Rattus norvegicus} 0.0005002501          1 399.8     1
+    ## [3] {Blaniulus guttulatus,                                                           
+    ##      Philoscia muscorum}   => {Rattus norvegicus} 0.0005002501          1 399.8     1
+    ## [4] {Blaniulus guttulatus,                                                           
+    ##      Cairina moschata}     => {Rattus norvegicus} 0.0005002501          1 399.8     1
+    ## [5] {Arion hortensis,                                                                
+    ##      Blaniulus guttulatus} => {Rattus norvegicus} 0.0005002501          1 399.8     1
+
+``` r
 #find all rules for black-capped chickadees:
-irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.2, maxlen=3), appearance = list(rhs="Poecile atricapillus"))# 
+irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.2, maxlen=3), appearance = list(rhs="Poecile atricapillus"))#
 ```
 
     ## Apriori
@@ -302,8 +321,22 @@ plot(subrulesBlCa, method = "graph", main = "Black-capped Chickadee, NYC, N=5 ru
 
 ![](rules_files/figure-markdown_github/unnamed-chunk-6-2.png)
 
-find association rules across all iNaturalist data
-==================================================
+``` r
+inspect(subrulesBlCa)
+```
+
+    ##     lhs                          rhs                         support confidence   lift count
+    ## [1] {Setophaga fusca}         => {Poecile atricapillus} 0.0005002501          1 499.75     1
+    ## [2] {Setophaga fusca,                                                                       
+    ##      Setophaga striata}       => {Poecile atricapillus} 0.0005002501          1 499.75     1
+    ## [3] {Pheucticus ludovicianus,                                                               
+    ##      Setophaga fusca}         => {Poecile atricapillus} 0.0005002501          1 499.75     1
+    ## [4] {Setophaga caerulescens,                                                                
+    ##      Setophaga fusca}         => {Poecile atricapillus} 0.0005002501          1 499.75     1
+    ## [5] {Bombycilla cedrorum,                                                                   
+    ##      Setophaga fusca}         => {Poecile atricapillus} 0.0005002501          1 499.75     1
+
+##### find association rules across all iNaturalist data
 
 ``` r
 load("inat.ok.sm.Rdata")
@@ -320,11 +353,13 @@ inat.ct$count = 1#make all counts 1
  i.df = inat.ct[, c("park_date_recordedBy", "park_date", "species", "count")]
 #write and then read back in again as transaction
   write.csv(i.df, file = "i.df.csv")
- 
+
 itrans = read.transactions("i.df.csv", format = "single", sep = ",", cols = c("park_date_recordedBy", "species"))
 
+#find all rat observations
+rat=subset(i.df, species == "Rattus norvegicus")
 #find all rules involving Norway rats
-  irulesRaNo <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.05, maxlen=3), appearance = list(rhs="Rattus norvegicus"))# 
+  irulesRaNo <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.05, maxlen=3), appearance = list(rhs="Rattus norvegicus"))#
 ```
 
     ## Apriori
@@ -342,18 +377,18 @@ itrans = read.transactions("i.df.csv", format = "single", sep = ",", cols = c("p
     ## Absolute minimum support count: 27 
     ## 
     ## set item appearances ...[1 item(s)] done [0.00s].
-    ## set transactions ...[31546 item(s), 272131 transaction(s)] done [0.34s].
+    ## set transactions ...[31546 item(s), 272131 transaction(s)] done [0.33s].
     ## sorting and recoding items ... [7652 item(s)] done [0.04s].
-    ## creating transaction tree ... done [0.15s].
+    ## creating transaction tree ... done [0.14s].
     ## checking subsets of size 1 2 3
 
     ## Warning in apriori(itrans, parameter = list(support = 1e-04, confidence =
     ## 0.05, : Mining stopped (maxlen reached). Only patterns up to a length of 3
     ## returned!
 
-    ##  done [26.85s].
-    ## writing ... [2760 rule(s)] done [3.66s].
-    ## creating S4 object  ... done [0.60s].
+    ##  done [23.87s].
+    ## writing ... [2760 rule(s)] done [3.51s].
+    ## creating S4 object  ... done [0.48s].
 
 ``` r
 subrulesRaNo <- head(irulesRaNo, n = 5, by = "lift")
@@ -363,8 +398,30 @@ plot(subrulesRaNo, method = "graph", main = "rats, all data, maxlen=3")
 ![](rules_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
 ``` r
+print("Norway rat rules")
+```
+
+    ## [1] "Norway rat rules"
+
+``` r
+inspect(subrulesRaNo)
+```
+
+    ##     lhs                              rhs                      support confidence     lift count
+    ## [1] {Daucus carota,                                                                            
+    ##      Sitta carolinensis}          => {Rattus norvegicus} 0.0001028916 0.08888889 254.6255    28
+    ## [2] {Acer negundo,                                                                             
+    ##      Sialia sialis}               => {Rattus norvegicus} 0.0001028916 0.08722741 249.8661    28
+    ## [3] {Acer rubrum,                                                                              
+    ##      Zerynthia polyxena}          => {Rattus norvegicus} 0.0001065663 0.08708709 249.4642    29
+    ## [4] {Colaptes auratus,                                                                         
+    ##      Parthenocissus quinquefolia} => {Rattus norvegicus} 0.0001139157 0.08707865 249.4400    31
+    ## [5] {Acer rubrum,                                                                              
+    ##      Nycticorax nycticorax}       => {Rattus norvegicus} 0.0001065663 0.08630952 247.2368    29
+
+``` r
 #find all rules for black-capped chickadees:
-irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.1, maxlen=3), appearance = list(rhs="Poecile atricapillus"))# 
+irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.1, maxlen=3), appearance = list(rhs="Poecile atricapillus"))#
 ```
 
     ## Apriori
@@ -382,18 +439,18 @@ irulesBlCa <- apriori(itrans, parameter = list(support = 0.0001, confidence = 0.
     ## Absolute minimum support count: 27 
     ## 
     ## set item appearances ...[1 item(s)] done [0.00s].
-    ## set transactions ...[31546 item(s), 272131 transaction(s)] done [0.27s].
+    ## set transactions ...[31546 item(s), 272131 transaction(s)] done [0.30s].
     ## sorting and recoding items ... [7652 item(s)] done [0.04s].
-    ## creating transaction tree ... done [0.14s].
+    ## creating transaction tree ... done [0.13s].
     ## checking subsets of size 1 2 3
 
     ## Warning in apriori(itrans, parameter = list(support = 1e-04, confidence =
     ## 0.1, : Mining stopped (maxlen reached). Only patterns up to a length of 3
     ## returned!
 
-    ##  done [22.40s].
-    ## writing ... [615810 rule(s)] done [3.84s].
-    ## creating S4 object  ... done [0.56s].
+    ##  done [23.61s].
+    ## writing ... [615810 rule(s)] done [3.60s].
+    ## creating S4 object  ... done [2.82s].
 
 ``` r
 subrulesBlCa <- head(irulesBlCa, n = 5, by = "lift")
@@ -403,8 +460,30 @@ plot(subrulesBlCa, method = "graph", main = "black-capped chickadees, all data, 
 ![](rules_files/figure-markdown_github/unnamed-chunk-7-2.png)
 
 ``` r
+print("Black-capped Chickadee rules")
+```
+
+    ## [1] "Black-capped Chickadee rules"
+
+``` r
+inspect(subrulesBlCa)
+```
+
+    ##     lhs                         rhs                         support confidence     lift count
+    ## [1] {Bignonia capreolata,                                                                    
+    ##      Senecio vulgaris}       => {Poecile atricapillus} 0.0001175904  0.9696970 153.5999    32
+    ## [2] {Nemophila menziesii,                                                                    
+    ##      Toxicodendron radicans} => {Poecile atricapillus} 0.0001102410  0.9677419 153.2902    30
+    ## [3] {Carya cordiformis,                                                                      
+    ##      Scincella lateralis}    => {Poecile atricapillus} 0.0001102410  0.9677419 153.2902    30
+    ## [4] {Pyrocephalus rubinus,                                                                   
+    ##      Trifolium incarnatum}   => {Poecile atricapillus} 0.0001102410  0.9677419 153.2902    30
+    ## [5] {Callicarpa americana,                                                                   
+    ##      Viola pubescens}        => {Poecile atricapillus} 0.0001065663  0.9666667 153.1199    29
+
+``` r
 #find all rules, include maxlen of 3
-irules <- apriori(itrans, parameter = list(support = 0.001, confidence = 0.1, maxlen=3))# 
+irules <- apriori(itrans, parameter = list(support = 0.001, confidence = 0.1, maxlen=3))#
 ```
 
     ## Apriori
@@ -431,7 +510,7 @@ irules <- apriori(itrans, parameter = list(support = 0.001, confidence = 0.1, ma
     ## 0.1, : Mining stopped (maxlen reached). Only patterns up to a length of 3
     ## returned!
 
-    ##  done [0.46s].
+    ##  done [0.48s].
     ## writing ... [956293 rule(s)] done [0.07s].
     ## creating S4 object  ... done [0.21s].
 
@@ -458,14 +537,13 @@ auk_clean(input_file, output_file, overwrite=TRUE)
 ebd_NYNY = read_ebd(output_file)
 ```
 
-find association rules in eBird NYC data
-========================================
+##### find association rules in eBird NYC data
 
 ``` r
 write.csv(ebd_NYNY, file = "ebd_NYNY.csv")
 etrans = read.transactions("ebd_NYNY.csv", format = "single", sep = ",", cols = c("checklist_id", "common_name"))
 
-erulesBlCa <- apriori(etrans, parameter = list(support = 0.001, confidence = 0.6, maxlen=3), appearance = list(rhs="Black-capped Chickadee"))#could re-run with 
+erulesBlCa <- apriori(etrans, parameter = list(support = 0.001, confidence = 0.6, maxlen=3), appearance = list(rhs="Black-capped Chickadee"))#could re-run with
 ```
 
     ## Apriori
@@ -492,7 +570,7 @@ erulesBlCa <- apriori(etrans, parameter = list(support = 0.001, confidence = 0.6
     ## 0.6, : Mining stopped (maxlen reached). Only patterns up to a length of 3
     ## returned!
 
-    ##  done [0.04s].
+    ##  done [0.05s].
     ## writing ... [531 rule(s)] done [0.00s].
     ## creating S4 object  ... done [0.00s].
 
@@ -504,7 +582,23 @@ plot(subrulesBlCa, method = "graph", main = "black-capped chickadee, eBird NYC, 
 ![](rules_files/figure-markdown_github/unnamed-chunk-9-1.png)
 
 ``` r
-erules <- apriori(etrans, parameter = list(support = 0.01, confidence = 0.6, maxlen=3))#could re-run with 
+inspect(subrulesBlCa)
+```
+
+    ##     lhs                        rhs                          support confidence     lift count
+    ## [1] {Red-winged Blackbird,                                                                   
+    ##      Western Tanager}       => {Black-capped Chickadee} 0.001268392          1 6.891608    10
+    ## [2] {Red-breasted Nuthatch,                                                                  
+    ##      Varied Thrush}         => {Black-capped Chickadee} 0.001141553          1 6.891608     9
+    ## [3] {House Finch,                                                                            
+    ##      Varied Thrush}         => {Black-capped Chickadee} 0.001522070          1 6.891608    12
+    ## [4] {Song Sparrow,                                                                           
+    ##      Varied Thrush}         => {Black-capped Chickadee} 0.001141553          1 6.891608     9
+    ## [5] {Downy Woodpecker,                                                                       
+    ##      Varied Thrush}         => {Black-capped Chickadee} 0.002409944          1 6.891608    19
+
+``` r
+erules <- apriori(etrans, parameter = list(support = 0.01, confidence = 0.6, maxlen=3))#could re-run with
 ```
 
     ## Apriori
@@ -531,9 +625,9 @@ erules <- apriori(etrans, parameter = list(support = 0.01, confidence = 0.6, max
     ## 0.6, : Mining stopped (maxlen reached). Only patterns up to a length of 3
     ## returned!
 
-    ##  done [0.03s].
+    ##  done [0.04s].
     ## writing ... [78992 rule(s)] done [0.01s].
-    ## creating S4 object  ... done [0.01s].
+    ## creating S4 object  ... done [0.02s].
 
 ``` r
 subrules <- head(erules, n = 10, by = "lift")
@@ -543,5 +637,33 @@ plot(subrules, method = "graph", main = "all species, eBird NYC, N=10 rules, max
 ![](rules_files/figure-markdown_github/unnamed-chunk-9-2.png)
 
 ``` r
-#plot = plot(subrules, method = "grouped")
+plot = plot(subrules, method = "grouped")
 ```
+
+![](rules_files/figure-markdown_github/unnamed-chunk-9-3.png)
+
+``` r
+inspect(subrules)
+```
+
+    ##      lhs                           rhs                         support confidence     lift count
+    ## [1]  {American Coot,                                                                            
+    ##       Hooded Merganser}         => {Bufflehead}             0.01128869  0.8317757 12.98558    89
+    ## [2]  {American Coot,                                                                            
+    ##       Herring Gull}             => {Bufflehead}             0.01547438  0.8243243 12.86925   122
+    ## [3]  {American Coot,                                                                            
+    ##       Great Black-backed Gull}  => {Bufflehead}             0.01636225  0.8216561 12.82760   129
+    ## [4]  {Hooded Merganser,                                                                         
+    ##       Ruddy Duck}               => {Bufflehead}             0.01966007  0.8031088 12.53804   155
+    ## [5]  {American Coot,                                                                            
+    ##       Double-crested Cormorant} => {Bufflehead}             0.01090817  0.7962963 12.43168    86
+    ## [6]  {Herring Gull,                                                                             
+    ##       Hooded Merganser}         => {Bufflehead}             0.01674277  0.7951807 12.41427   132
+    ## [7]  {American Coot,                                                                            
+    ##       Ruddy Duck}               => {Bufflehead}             0.01877220  0.7914439 12.35593   148
+    ## [8]  {Eastern Phoebe,                                                                           
+    ##       Winter Wren}              => {Golden-crowned Kinglet} 0.01128869  0.6953125 12.31875    89
+    ## [9]  {Great Black-backed Gull,                                                                  
+    ##       Hooded Merganser}         => {Bufflehead}             0.01775748  0.7865169 12.27901   140
+    ## [10] {Hooded Merganser,                                                                         
+    ##       Northern Shoveler}        => {Bufflehead}             0.01864536  0.7860963 12.27244   147
